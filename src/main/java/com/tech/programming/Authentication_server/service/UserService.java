@@ -6,6 +6,10 @@ import com.tech.programming.Authentication_server.dto.UserResponse;
 import com.tech.programming.Authentication_server.entity.User;
 import com.tech.programming.Authentication_server.jpa.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -15,10 +19,23 @@ import java.util.Optional;
 public class UserService {
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
+
+    private final BCryptPasswordEncoder encoder;
+
+    @Autowired
+    AuthenticationManager authManager;
+
+    @Autowired
+    JWTService jwtService;
+
+    public UserService() {
+        this.encoder = new BCryptPasswordEncoder(12);
+    }
 
     public UserResponse addUser(UserRequest request){
         User user = request.toEntity(null);
+        user.setPasswordHash(encoder.encode(request.getPasswordHash()));
         userRepository.save(user);
         return new UserResponse(user);
     }
@@ -41,5 +58,16 @@ public class UserService {
         }
 
         return new UserResponse(user);
+    }
+
+    public String verifyLogin(LoginRequest request) {
+        Authentication authentication = authManager.authenticate(new UsernamePasswordAuthenticationToken(
+                request.getEmail(), request.getPassword()
+        ));
+
+        if(authentication.isAuthenticated()){
+            return jwtService.generateToken(request.getEmail());
+        }
+        return "failed";
     }
 }

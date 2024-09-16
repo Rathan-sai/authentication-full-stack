@@ -22,7 +22,6 @@ public class UserRequest {
         }
         user.setName(this.getName());
         user.setEmail(this.getEmail());
-        user.setPasswordHash(this.getPasswordHash());
         user.setDescription(this.getDescription());
 
         return user;

@@ -2,8 +2,6 @@ package com.tech.programming.Authentication_server.controller;
 
 import com.tech.programming.Authentication_server.dto.LoginRequest;
 import com.tech.programming.Authentication_server.dto.UserRequest;
-import com.tech.programming.Authentication_server.dto.UserResponse;
-import com.tech.programming.Authentication_server.entity.User;
 import com.tech.programming.Authentication_server.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,9 +16,13 @@ public class UserAuthController {
     UserService userService;
 
     @GetMapping
-    public String login(HttpServletRequest httpServletRequest){
-//        return userService.login(loginRequest);
+    public String getSessionId(HttpServletRequest httpServletRequest){
         return "welcome to the programming world " + httpServletRequest.getSession().getId();
+    }
+
+    @PostMapping("login")
+    public String verifyLogin(@RequestBody LoginRequest request){
+        return userService.verifyLogin(request);
     }
 
     @GetMapping("names")
