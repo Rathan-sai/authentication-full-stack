@@ -2,7 +2,6 @@ package com.tech.programming.Authentication_server.controller;
 
 import com.tech.programming.Authentication_server.dto.LoginRequest;
 import com.tech.programming.Authentication_server.dto.LoginResponse;
-import com.tech.programming.Authentication_server.dto.UserRequest;
 import com.tech.programming.Authentication_server.entity.User;
 import com.tech.programming.Authentication_server.service.JWTService;
 import com.tech.programming.Authentication_server.service.UserService;
@@ -55,18 +54,30 @@ public class UserAuthController {
         return ResponseEntity.ok(new LoginResponse(authToken));
     }
 
-    @GetMapping("api/names")
-    public String get(){
-        return "rathan, jeevan";
+    @GetMapping(value = "/firebase/google")
+    public ResponseEntity<LoginResponse> verifyFireBaseGoogleLogin(@RequestParam("access_token") String accessToken){
+        User user = userService.verifyFireBaseGoogleLogin(accessToken);
+        if(user == null){
+            throw new AuthException("Could not verify google account");
+        }
+
+        String authToken = jwtService.generateToken(user.getEmail());
+        return ResponseEntity.ok(new LoginResponse(authToken));
+    }
+
+    @GetMapping(value = "/firebase/github")
+    public ResponseEntity<LoginResponse> verifyFireBaseGitHubLogin(@RequestParam("access_token") String accessToken){
+        User user = userService.verifyFireBaseGitHubLogin(accessToken);
+        if(user == null){
+            throw new AuthException("Could not verify gitHub account");
+        }
+
+        String authToken = jwtService.generateToken(user.getEmail());
+        return ResponseEntity.ok(new LoginResponse(authToken));
     }
 
     @GetMapping("csrf-token")
     public CsrfToken getToken(HttpServletRequest request){
         return (CsrfToken) request.getAttribute("_csrf");
-    }
-
-    @PostMapping("students")
-    public String add(@RequestBody UserRequest request){
-        return "added students";
     }
 }

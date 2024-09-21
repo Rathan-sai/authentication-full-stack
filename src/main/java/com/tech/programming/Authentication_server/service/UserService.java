@@ -1,5 +1,8 @@
 package com.tech.programming.Authentication_server.service;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.tech.programming.Authentication_server.Exception.ValidationException;
@@ -22,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.rmi.RemoteException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -41,7 +43,7 @@ public class UserService {
     @Value("${auth.github.redirect_url}")
     private String gitHubCallBackUrl;
 
-    @Value("${auth.github.tokenURl")
+    @Value("${auth.github.tokenURl}")
     private String tokenURl;
 
     @Autowired
@@ -52,11 +54,14 @@ public class UserService {
     @Autowired
     AuthenticationManager authManager;
 
+    private final FirebaseAuth firebaseAuth;
+
     @Autowired
     JWTService jwtService;
 
-    public UserService() {
+    public UserService(FirebaseAuth firebaseAuth) {
         this.encoder = new BCryptPasswordEncoder(12);
+        this.firebaseAuth = firebaseAuth;
     }
 
     public UserResponse addUser(UserRequest request){
@@ -138,6 +143,52 @@ public class UserService {
         }
     }
 
+    public User verifyFireBaseGoogleLogin(String accessToken) {
+        try {
+            FirebaseToken decodedToken = firebaseAuth.verifyIdToken(accessToken);
+            String email = decodedToken.getEmail();
+            String name = decodedToken.getName();
+            if (!StringUtils.hasText(email)) {
+                throw new ValidationException("Could not verify token");
+            }
+            User user = userRepository.findByEmail(email);
+            if(user == null){
+                user = new User();
+                user.setName(name);
+                user.setEmail(email);
+                user.setDescription("tester for test");
+                user.setPasswordHash(encoder.encode(accessToken));
+                userRepository.save(user);
+            }
+            return user;
+        } catch (FirebaseAuthException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public User verifyFireBaseGitHubLogin(String accessToken) {
+        try {
+            FirebaseToken decodedToken = firebaseAuth.verifyIdToken(accessToken);
+            String email = decodedToken.getEmail();
+            String name = decodedToken.getName();
+            if (!StringUtils.hasText(email)) {
+                throw new ValidationException("Could not verify token");
+            }
+            User user = userRepository.findByEmail(email);
+            if(user == null){
+                user = new User();
+                user.setName(name);
+                user.setEmail(email);
+                user.setDescription("tester for test");
+                user.setPasswordHash(encoder.encode(accessToken));
+                userRepository.save(user);
+            }
+            return user;
+        } catch (FirebaseAuthException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public User verifyGitHubLogin(String code) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(60, TimeUnit.SECONDS)
@@ -154,7 +205,7 @@ public class UserService {
 
         Request request = new Request.Builder()
                 .url("https://github.com/login/oauth/access_token")
-                .header("Authorization", "token " + code)
+                .header("Authorization", "token " + access_token)
                 .header("Accept", "application/json")
                 .build();
 
